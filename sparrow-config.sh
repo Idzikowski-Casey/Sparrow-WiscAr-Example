@@ -1,14 +1,15 @@
 # Configures environment for WiscAr lab
 
-export PROJECT_DIR="$HOME/Projects/Sparrow-WiscAr"
+export PROJECT_DIR="$(git rev-parse --show-toplevel)"
 export SPARROW_PATH="$PROJECT_DIR/Sparrow"
 export SPARROW_CONFIG="$SPARROW_PATH/config/WiscAr.cfg"
-export SPARROW_BACKUP_DIR="$PROJECT_DIR/WiscAr/backups"
+export SPARROW_BACKUP_DIR="$PROJECT_DIR/backups"
 export SPARROW_SECRET_KEY="GraniteAndesiteBasaltGabbro"
 export SPARROW_LAB_NAME="WiscAr"
 
-pipeline=$PROJECT_DIR/Sparrow/import-pipelines/WiscAr
-export SPARROW_SITE_CONTENT="$pipeline/site-content"
+export SPARROW_SITE_CONTENT="$PROJECT_DIR/site-content"
+
+pipeline="$PROJECT_DIR/import-pipeline"
 export SPARROW_INIT_SQL="$pipeline/sql"
 export SPARROW_COMMANDS="$pipeline/bin"
 
