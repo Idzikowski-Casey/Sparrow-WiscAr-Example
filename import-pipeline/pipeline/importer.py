@@ -28,6 +28,12 @@ param_data = {
     'K/Ca': "Potassium/Calcium ratio"
 }
 
+def split_error(v):
+    a = v.replace("Ma","").split("±")
+    value = float(a[0].strip())
+    error = float(a[1].strip())
+    return value, error
+
 class MAPImporter(BaseImporter):
     authority = "WiscAr"
     def __init__(self, db, **kwargs):
@@ -42,19 +48,18 @@ class MAPImporter(BaseImporter):
         return irr
 
     def create_parameters(self):
-
-        V = self.unit('V', 'Measured isotope abundance')
-        self.add(V)
-
         for k,v in param_data.items():
             p = self.parameter(k, v)
             self.add(p)
-
         # Create error metrics
+        V = self.unit('V', 'Measured isotope abundance')
         em1 = self.error_metric('1s', '1 standard deviation')
-        self.add(em1)
         em2 = self.error_metric('2s', '2 standard deviations')
-        self.add(em2)
+
+        at1 = self.analysis_type("Total Fusion Age", "Integrated Age")
+        at2 = self.analysis_type("Plateau Age", "Integrated Age")
+
+        self.add(V, em1, em2, at1, at2)
 
     def import_datafile(self, fn, rec, **kwargs):
         """
@@ -94,12 +99,12 @@ class MAPImporter(BaseImporter):
             date=mod_time,
             target=target.id)
         session.date_precision = "day"
-
-        session._irradiation = self.irradiation(info.pop('Project'))
-        session.data = info.to_dict()
-
         self.add(session)
         self.db.session.flush()
+
+
+        info = self.general_info(session, info)
+        session.data = info.to_dict()
 
         for i, step in enumerate(incremental_heating.iterrows()):
             self.import_heating_step(i, step, session, incremental_heating)
@@ -116,14 +121,47 @@ class MAPImporter(BaseImporter):
 
         # This function returns the top-level
         # record that should be linked to the datafile
+        self.db.session.flush()
         yield session
+
+    def general_info(self, session, info):
+        analysis = self.add_analysis(session, "General information")
+        self.attribute(analysis, "Irradiation ID", info.pop('Project'))
+        # J-value
+        value, error = split_error(info.pop('J'))
+        self.datum(analysis, "J-value", value, error=error)
+        # Location
+        self.attribute(analysis, "Irradiation location", info.pop('Location'))
+        # Analyst
+        self.attribute(analysis, "Analyst", info.pop('Analyst'))
+        self.attribute(analysis, "Mass Discrimination Law", info.pop('Mass Discrimination Law'))
+
+        # FC or AC tuff age
+        for c in ['FC', 'AC']:
+            try:
+                std = info.pop(c)
+            except KeyError:
+                continue
+            value, error = split_error(std)
+            # Correct inconsistencies in our method
+            if value > 20 and value < 21:
+                c = 'FC'
+            if value > 1.1 and value < 1.2:
+                c = 'AC'
+
+            self.constant(analysis, c+" standard age",
+                value,
+                error=error,
+                unit='Ma')
+            break
+        self.db.session.flush()
+        return info
 
     def import_heating_step(self, i, step, session, incremental_heating):
         (ix, row) = step
 
-        analysis = self.analysis(
-            ix,
-            session_id=session.id,
+        analysis = self.add_analysis(session, "Heating step",
+            analysis_name=ix,
             session_index=i)
         analysis.in_plateau = row['in_plateau']
         analysis.is_interpreted = False
@@ -202,7 +240,7 @@ class MAPImporter(BaseImporter):
         analysis.data = row.dropna().to_dict()
         self.add(analysis)
 
-    def import_shared_parameters(self, analysis, row):
+    def import_shared_parameters(self, analysis, row, **kwargs):
         self.add_K_Ca_ratio(analysis, row)
 
         age_parameter = 'plateau_age'
@@ -220,7 +258,8 @@ class MAPImporter(BaseImporter):
             error=row.iloc[error_ix],
             error_metric=em,
             is_computed=True,
-            error_unit='Ma')
+            error_unit='Ma',
+            **kwargs)
 
         ## 40Ar/39Ar(k) ratio
         param = '40(r)/39(k)'

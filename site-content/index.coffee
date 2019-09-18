@@ -8,8 +8,8 @@ import {GLMap} from 'plugins/gl-map'
 export default {
   siteTitle: "WiscAr"
   landingText: h Markdown, {src: aboutText}
-  sessionDetail: (props)=>
-    h StepHeatingChart, props
+  #sessionDetail: (props)=>
+  #  h StepHeatingChart, props
   adminBase: h(PlateauAgesComponent)
   landingGraphic: h GLMap, {accessToken: process.env.MAPBOX_API_TOKEN}
 }
