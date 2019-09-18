@@ -144,7 +144,7 @@ class MAPImporter(BaseImporter):
                 continue
             value, error = split_error(std)
             # Correct inconsistencies in our method
-            if value > 20 and value < 21:
+            if value > 28 and value < 29:
                 c = 'FC'
             if value > 1.1 and value < 1.2:
                 c = 'AC'
