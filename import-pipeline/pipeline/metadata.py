@@ -23,18 +23,6 @@ def row_to_mapping(row):
 
         depth=get('depth (m)'))
 
-def get_dataframe(path):
-    df = read_excel(path, sheet_index=0)
-    n = len(df)
-    print(f"{n} rows")
-    # Group everything
-    groups = df.groupby("sample_name")
-    samples = groups.first()
-    # Just get the first of each group for now
-    # We might not want to assume sample ID uniqueness
-    print(f"{len(samples)} unique sample names")
-    return samples
-
 def confirm_matching_irradiation(session, row):
     irr = session.get_attribute("Irradiation ID")
     # Sessions should not have two Irradiation IDs
@@ -59,10 +47,22 @@ class MetadataImporter(BaseImporter):
         verbose = self.verbose
         # Extract data tables from Excel sheet
 
-        df = get_dataframe(fn)
+        df = read_excel(fn, sheet_index=0)
+        n = len(df)
+        print(f"{n} rows")
+        # Group everything
+
+        self.import_samples(df)
+
+    def import_samples(self, df):
+        groups = df.groupby("sample_name")
+        samples = groups.first()
+        # Just get the first of each group for now
+        # We might not want to assume sample ID uniqueness
+        print(f"{len(samples)} unique sample names")
 
         # Import individual samples
-        for i, row in df.iterrows():
+        for i, row in samples.iterrows():
             try:
                 self.import_sample(row)
                 self.db.session.commit()
@@ -83,6 +83,7 @@ class MetadataImporter(BaseImporter):
         n = len(s.session_collection)
         echo(f"  {n} sessions")
         # Check that irradiation matches
+        session = None
         if n > 0:
             session = s.session_collection[0]
             confirm_matching_irradiation(session, row)
@@ -99,4 +100,14 @@ class MetadataImporter(BaseImporter):
             print(lith)
             s._material = self.material(lith)
         self.db.session.flush()
+
+        if n > 1:
+            secho("  More than one session for this sample\n  skipping project import", fg='red', dim=True)
+            return
+
+        self.import_project(row, session)
+
+    def import_project(self, row, session):
+        pass
+
 
