@@ -35,6 +35,16 @@ def get_dataframe(path):
     print(f"{len(samples)} unique sample names")
     return samples
 
+def confirm_matching_irradiation(session, row):
+    irr = session.get_attribute("Irradiation ID")
+    # Sessions should not have two Irradiation IDs
+    assert len(irr) == 1
+    v = irr[0].value
+    v1 = str(row['Irradiation'])
+    if not v.startswith(v1):
+        raise SparrowImportError(f"Irradiation mismatch")
+    print(f"  Irradiation {v}")
+
 class MetadataImporter(BaseImporter):
     authority = "WiscAr"
     def __init__(self, db, metadata_file, **kwargs):
@@ -55,8 +65,10 @@ class MetadataImporter(BaseImporter):
         for i, row in df.iterrows():
             try:
                 self.import_sample(row)
+                self.db.session.commit()
             except Exception as exc:
                 secho(exc.__class__.__name__+": "+str(exc), fg='red')
+                self.db.session.rollback()
 
         self.db.session.flush()
 
@@ -70,15 +82,21 @@ class MetadataImporter(BaseImporter):
             secho(f"  found existing", fg='green')
         n = len(s.session_collection)
         echo(f"  {n} sessions")
-        # Check that irratdiation matches
+        # Check that irradiation matches
         if n > 0:
             session = s.session_collection[0]
-            irr = session.get_attribute("Irradiation ID")
-            # Sessions should not have two Irradiation IDs
-            assert len(irr) == 1
-            v = irr[0].value
-            v1 = str(row['Irradiation'])
-            if not v.startswith(v1):
-                raise SparrowImportError(f"Irradiation mismatch")
-            print(f"  Irradiation {v}")
+            confirm_matching_irradiation(session, row)
+
+        lon = row['longitude']
+        lat = row['latitude']
+        if not (isna(lon) or isna(lat)):
+            loc = self.location(lon,lat)
+            print(loc)
+            s.location = loc
+
+        lith = row['lithology']
+        if not isna(lith):
+            print(lith)
+            s._material = self.material(lith)
+        self.db.session.flush()
 
