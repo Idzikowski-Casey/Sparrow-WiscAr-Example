@@ -119,9 +119,8 @@ class MetadataImporter(BaseImporter):
             return
 
     def import_project(self, name, group):
+        (paper_title, link) = name
         author = group['author'].unique()[0]
-        paper_title = name[0]
-        #print(name[0])
         first_part = paper_title.split(": ")[0]
         title_summary = " ".join(first_part.split()[:8])+"..."
         if not isna(author):
@@ -130,7 +129,48 @@ class MetadataImporter(BaseImporter):
             title_summary = auths+" — "+title_summary
 
         print(title_summary)
+
+        doi = link.split("doi.org/")[-1]
+        link = None
+        if not doi.startswith("10"):
+            link = doi
+            doi = None
+        print(doi, link)
+
+        def get(key):
+            vals = [v for v in group[key].unique() if not isna(v)]
+            if len(vals) == 0:
+                return None
+            return vals[0]
+
+        p = self.project(name=title_summary)
+
+        pub = self.m.publication.get_or_create(
+            doi=doi,
+            title=get('Title'),
+            link=link)
+
+        pub.author = author
+        pub.journal = get('journal')
+        pub.year = get('year')
+        p.publication_collection.append(pub)
+
+        sample_names = group.sample_name.unique().tolist()
+
+        q = (self.db.session.query(self.m.session)
+            .join(self.m.sample)
+            .filter(self.m.sample.name.in_(sample_names)))
+        p.session_collection += q
+        self.db.session.add(p)
+        self.db.session.flush()
         print("")
+
+    def sessions_for_row(self, row):
+        q = (self.db.session.query(self.m.session)
+            .join(self.m.sample)
+            .filter(self.m.sample.name == row.sample_name))
+
+
 
     def import_projects(self, df):
         # Group by publication for now
