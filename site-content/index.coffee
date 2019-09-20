@@ -11,5 +11,5 @@ export default {
   #sessionDetail: (props)=>
   #  h StepHeatingChart, props
   adminBase: h(PlateauAgesComponent)
-  landingGraphic: h GLMap, {accessToken: process.env.MAPBOX_API_TOKEN}
+  #landingGraphic: h GLMap, {accessToken: process.env.MAPBOX_API_TOKEN}
 }
