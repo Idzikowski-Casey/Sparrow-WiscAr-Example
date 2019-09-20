@@ -115,6 +115,7 @@ class MetadataImporter(BaseImporter):
         if not isna(lith):
             print(lith)
             s._material = self.material(lith)
+        self.db.session.add(s)
         self.db.session.flush()
 
     def import_project(self, name, group):
@@ -130,8 +131,8 @@ class MetadataImporter(BaseImporter):
         print(title_summary)
 
         doi = link.split("doi.org/")[-1]
-        if doi.startswith("doi: "):
-            doi = doi[5:]
+        if doi.startswith("doi:"):
+            doi = doi[4:].strip()
         link = None
         if not doi.startswith("10"):
             link = doi
@@ -156,18 +157,29 @@ class MetadataImporter(BaseImporter):
         pub.year = get('year')
         p.publication_collection.append(pub)
 
-        sample_names = [a for a in group.sample_name.unique() if not isna(a)]
+        sample_names = [a for a in group.sample_name.unique().astype(str) if not isna(a)]
         if len(sample_names):
+            # Link sessions to the project
             q = (self.db.session.query(self.m.session)
                 .join(self.m.sample)
                 .filter(self.m.sample.name.in_(sample_names)))
             p.session_collection += q
+            # Directly link samples (this produces duplicate links which could be
+            # an issue)
+            q = (self.db.session.query(self.m.sample)
+                .filter(self.m.sample.name.in_(sample_names)))
+            p.sample_collection += q
+
         self.db.session.add(p)
-        self.db.session.flush()
         print("")
 
     def import_projects(self, df):
         # Group by publication for now
         projects = df.groupby(["Title", "doi link"])
         for name, group in projects:
-            self.import_project(name, group)
+            try:
+                self.import_project(name, group)
+                self.db.session.commit()
+            except Exception as exc:
+                secho(exc.__class__.__name__+": "+str(exc), fg='red')
+                self.db.session.rollback()
