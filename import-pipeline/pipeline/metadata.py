@@ -59,15 +59,18 @@ class MetadataImporter(BaseImporter):
         verbose = self.verbose
         # Extract data tables from Excel sheet
 
-        df = read_excel(fn, sheet_index=0)
+        self.import_sheet(fn, 0)
+        self.import_sheet(fn, 1)
+
+    def import_sheet(self, fn, index=0):
+        df = read_excel(fn, sheetname=index)
         n = len(df)
         print(f"{n} rows")
-        # Group everything
-
-        #self.import_samples(df)
+        self.import_samples(df)
         self.import_projects(df)
 
     def import_samples(self, df):
+        # Group everything
         groups = df.groupby("sample_name")
         samples = groups.first()
         # Just get the first of each group for now
@@ -114,10 +117,6 @@ class MetadataImporter(BaseImporter):
             s._material = self.material(lith)
         self.db.session.flush()
 
-        if n > 1:
-            secho("  More than one session for this sample\n  skipping project import", fg='red', dim=True)
-            return
-
     def import_project(self, name, group):
         (paper_title, link) = name
         author = group['author'].unique()[0]
@@ -131,6 +130,8 @@ class MetadataImporter(BaseImporter):
         print(title_summary)
 
         doi = link.split("doi.org/")[-1]
+        if doi.startswith("doi: "):
+            doi = doi[5:]
         link = None
         if not doi.startswith("10"):
             link = doi
@@ -155,22 +156,15 @@ class MetadataImporter(BaseImporter):
         pub.year = get('year')
         p.publication_collection.append(pub)
 
-        sample_names = group.sample_name.unique().tolist()
-
-        q = (self.db.session.query(self.m.session)
-            .join(self.m.sample)
-            .filter(self.m.sample.name.in_(sample_names)))
-        p.session_collection += q
+        sample_names = [a for a in group.sample_name.unique() if not isna(a)]
+        if len(sample_names):
+            q = (self.db.session.query(self.m.session)
+                .join(self.m.sample)
+                .filter(self.m.sample.name.in_(sample_names)))
+            p.session_collection += q
         self.db.session.add(p)
         self.db.session.flush()
         print("")
-
-    def sessions_for_row(self, row):
-        q = (self.db.session.query(self.m.session)
-            .join(self.m.sample)
-            .filter(self.m.sample.name == row.sample_name))
-
-
 
     def import_projects(self, df):
         # Group by publication for now
