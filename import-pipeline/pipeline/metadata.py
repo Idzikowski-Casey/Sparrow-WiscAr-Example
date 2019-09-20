@@ -33,6 +33,18 @@ def confirm_matching_irradiation(session, row):
         raise SparrowImportError(f"Irradiation mismatch")
     print(f"  Irradiation {v}")
 
+def format_authorlist(author):
+    __ = [a.strip() for a in author.replace(';',',').split(",")]
+    if len(__) == 1:
+        auths = __[0]
+    if len(__) == 2:
+        auths = ", ".join(__)
+    else:
+        auths = __[0]
+        if 'et al' not in auths:
+            auths += " et al."
+    return auths
+
 class MetadataImporter(BaseImporter):
     authority = "WiscAr"
     def __init__(self, db, metadata_file, **kwargs):
@@ -52,7 +64,8 @@ class MetadataImporter(BaseImporter):
         print(f"{n} rows")
         # Group everything
 
-        self.import_samples(df)
+        #self.import_samples(df)
+        self.import_projects(df)
 
     def import_samples(self, df):
         groups = df.groupby("sample_name")
@@ -105,9 +118,22 @@ class MetadataImporter(BaseImporter):
             secho("  More than one session for this sample\n  skipping project import", fg='red', dim=True)
             return
 
-        self.import_project(row, session)
+    def import_project(self, name, group):
+        author = group['author'].unique()[0]
+        paper_title = name[0]
+        #print(name[0])
+        first_part = paper_title.split(": ")[0]
+        title_summary = " ".join(first_part.split()[:8])+"..."
+        if not isna(author):
+            auths = format_authorlist(author)
 
-    def import_project(self, row, session):
-        pass
+            title_summary = auths+" — "+title_summary
 
+        print(title_summary)
+        print("")
 
+    def import_projects(self, df):
+        # Group by publication for now
+        projects = df.groupby(["Title", "doi link"])
+        for name, group in projects:
+            self.import_project(name, group)
