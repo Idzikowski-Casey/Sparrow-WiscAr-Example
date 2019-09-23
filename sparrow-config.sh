@@ -19,3 +19,5 @@ export COMPOSE_PROJECT_NAME="WiscAr"
 export SPARROW_DATA_DIR="$PROJECT_DIR/Data"
 export MAPBOX_API_TOKEN="pk.eyJ1IjoiZGF2ZW5xdWlubiIsImEiOiJjanZ1eWwxMjAwNmRvM3lzNTNqN2d0OHdzIn0.kmDqABs8gHCaihj8UdnQKg"
 
+overrides="${0:h}/sparrow-config.overrides.sh"
+[ -f "$overrides" ] && source "$overrides"
