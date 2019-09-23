@@ -36,6 +36,7 @@ def split_error(v):
 
 class MAPImporter(BaseImporter):
     authority = "WiscAr"
+    file_type = "ArArCALC"
     def __init__(self, db, **kwargs):
         super().__init__(db)
         self.verbose = kwargs.pop("verbose", False)
@@ -59,7 +60,11 @@ class MAPImporter(BaseImporter):
         at1 = self.analysis_type("Total Fusion Age", "Integrated Age")
         at2 = self.analysis_type("Plateau Age", "Integrated Age")
 
-        self.add(V, em1, em2, at1, at2)
+        # Set the description for the data file type
+        v = self.db.session.query(self.m.data_file_type).get(self.file_type)
+        v.description = 'Excel spreadsheet for the ArArCALC data analysis program.'
+
+        self.add(v, V, em1, em2, at1, at2)
 
     def import_datafile(self, fn, rec, **kwargs):
         """
