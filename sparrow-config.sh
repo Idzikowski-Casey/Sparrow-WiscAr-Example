@@ -4,7 +4,6 @@ export PROJECT_DIR="$(git rev-parse --show-toplevel)"
 export SPARROW_PATH="$PROJECT_DIR/Sparrow"
 export SPARROW_CONFIG="$SPARROW_PATH/config/WiscAr.cfg"
 export SPARROW_BACKUP_DIR="$PROJECT_DIR/backups"
-export SPARROW_SECRET_KEY="GraniteAndesiteBasaltGabbro"
 export SPARROW_LAB_NAME="WiscAr"
 
 export SPARROW_SITE_CONTENT="$PROJECT_DIR/site-content"
@@ -17,7 +16,6 @@ export SPARROW_COMMANDS="$pipeline/bin"
 export COMPOSE_PROJECT_NAME="WiscAr"
 
 export SPARROW_DATA_DIR="$PROJECT_DIR/Data"
-export MAPBOX_API_TOKEN="pk.eyJ1IjoiZGF2ZW5xdWlubiIsImEiOiJjanZ1eWwxMjAwNmRvM3lzNTNqN2d0OHdzIn0.kmDqABs8gHCaihj8UdnQKg"
 
 overrides="${0:h}/sparrow-config.overrides.sh"
 [ -f "$overrides" ] && source "$overrides"
