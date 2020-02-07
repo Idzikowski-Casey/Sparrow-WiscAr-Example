@@ -9,6 +9,7 @@ from .metadata import MetadataImporter
 
 cli = Group()
 
+
 def get_data_directory():
     varname = "SPARROW_DATA_DIR"
     env = environ.get(varname, None)
@@ -17,43 +18,46 @@ def get_data_directory():
         echo(f"Environment variable {v} is not set.")
         secho("Aborting", fg='red', bold=True)
         return
-    path = Path(env)
-    assert path.is_dir()
-    return path
+    p = Path(env)
+    assert p.is_dir()
+    return p
+
 
 @cli.command(name="import-map")
-@option('--redo','-r', is_flag=True, default=False)
+@option('--redo', '-r', is_flag=True, default=False)
 @option('--stop-on-error', is_flag=True, default=False)
-@option('--verbose','-v', is_flag=True, default=False)
-def import_map(redo=False, stop_on_error=False, verbose=False):
+@option('--verbose', '-v', is_flag=True, default=False)
+@option('--show-data', '-S', is_flag=True, default=False)
+def import_map(redo=False, stop_on_error=False, verbose=False, show_data=False):
     """
     Import WiscAr MAP spectrometer data (ArArCalc files) in bulk.
     """
-    path = get_data_directory()
+    data_path = get_data_directory()
 
     db = Database()
-    importer = MAPImporter(db)
-    importer.iterfiles(path.glob("**/*.xls"), redo=redo)
+    importer = MAPImporter(db, verbose=verbose, show_data=show_data)
+    importer.iterfiles(data_path.glob("**/*.xls"), redo=redo)
 
     # Clean up data inconsistencies
     fp = relative_path(__file__, "sql", "clean-data.sql")
     db.exec_sql(fp)
 
+
 @cli.command(name="import-metadata")
-@option('--redo','-r', is_flag=True, default=False)
+@option('--redo', '-r', is_flag=True, default=False)
 @option('--stop-on-error', is_flag=True, default=False)
-@option('--verbose','-v', is_flag=True, default=False)
-def import_map(redo=False, stop_on_error=False, verbose=False):
+@option('--verbose', '-v', is_flag=True, default=False)
+def import_metadata(redo=False, stop_on_error=False, verbose=False):
     """
     Import metadata for measurements.
     """
-    path = get_data_directory()
+    data_path = get_data_directory()
 
-    fn = (path/'WiscAr_metadata.xlsx')
+    fn = (data_path/'WiscAr_metadata.xlsx')
     assert fn.exists()
 
     db = Database()
-    importer = MetadataImporter(db, fn)
+    importer = MetadataImporter(db, fn, verbose=verbose)
 
 if __name__ == '__main__':
     cli()

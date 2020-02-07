@@ -38,8 +38,8 @@ class MAPImporter(BaseImporter):
     authority = "WiscAr"
     file_type = "ArArCALC"
     def __init__(self, db, **kwargs):
-        super().__init__(db)
-        self.verbose = kwargs.pop("verbose", False)
+        self.show_data = kwargs.pop('show_data', False)
+        super().__init__(db, **kwargs)
         self.create_parameters()
 
     def irradiation(self, id):
@@ -70,7 +70,6 @@ class MAPImporter(BaseImporter):
         """
         Import an original data file
         """
-        verbose = self.verbose
         # Extract data tables from Excel sheet
 
         # File modification time is right now the best proxy
@@ -82,7 +81,7 @@ class MAPImporter(BaseImporter):
             incremental_heating, info, results = extract_data_tables(fn)
         except Exception as exc:
             raise SparrowImportError(str(exc))
-        if verbose:
+        if self.show_data:
             print_dataframe(incremental_heating)
             print_dataframe(info)
             print_dataframe(results.transpose())
@@ -179,6 +178,7 @@ class MAPImporter(BaseImporter):
             # Everything is less than 100
             self.datum(analysis, 'power', row['temperature'], unit='%',
                 description='Laser power for heating step')
+
         else:
             self.datum(analysis, 'Tstep', row['temperature'],
                 unit="°C", description='Temperature of heating step')
