@@ -256,6 +256,24 @@ class MAPImporter(BaseImporter):
         error_ix = ix+1
         em = self.get_error_metric(row.index[error_ix])
 
+        # TODO: integrate this new method
+        # Datum = self.db.app.interface.datum()
+        #
+        # datum = dict(
+        #     analysis=analysis,
+        #     value=row['Age'],
+        #     error=row.iloc[error_ix],
+        #     unit='Ma',
+        #     error_unit='Ma',
+        #     type=dict(
+        #         parameter=age_parameter,
+        #         is_computed=True,
+        #         error_metric=em
+        #     )
+        # )
+        #
+        # Datum.load(datum, session=self.db.session)
+        #
         self.datum(analysis,
             value=row['Age'],
             unit='Ma',
