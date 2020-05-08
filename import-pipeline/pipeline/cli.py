@@ -3,6 +3,7 @@ from click import command, option, echo, secho, style, Group
 from pathlib import Path
 from sparrow import Database
 from sparrow.util import relative_path
+from sparrow import construct_app
 
 from .importer import MAPImporter
 from .metadata import MetadataImporter
@@ -32,9 +33,9 @@ def import_map(redo=False, stop_on_error=False, verbose=False, show_data=False):
     """
     Import WiscAr MAP spectrometer data (ArArCalc files) in bulk.
     """
-    data_path = get_data_directory()
+    data_path = get_data_directory()/"MAP-Irradiations"
 
-    db = Database()
+    app, db = construct_app(minimal=True)
     importer = MAPImporter(db, verbose=verbose, show_data=show_data)
     importer.iterfiles(data_path.glob("**/*.xls"), redo=redo)
 
@@ -56,7 +57,7 @@ def import_metadata(redo=False, stop_on_error=False, verbose=False):
     fn = (data_path/'WiscAr_metadata.xlsx')
     assert fn.exists()
 
-    db = Database()
+    app, db = construct_app(minimal=True)
     importer = MetadataImporter(db, fn, verbose=verbose)
 
 if __name__ == '__main__':
