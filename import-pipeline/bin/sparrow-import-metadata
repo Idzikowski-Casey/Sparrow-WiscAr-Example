@@ -8,6 +8,7 @@ import_pipeline="${0:h:h:r}"
 # Run within container, mounting data directory
 # and importer code.
 # We should probably create a dockerfile for this case.
+sparrow compose build backend
 sparrow compose run \
   -e "SPARROW_DATA_DIR=/Data" \
   -e "PYTHONPATH=/pipeline" \

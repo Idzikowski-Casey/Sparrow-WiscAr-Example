@@ -23,7 +23,14 @@ def row_to_mapping(row):
 
         depth=get('depth (m)'))
 
-def confirm_matching_irradiation(session, row):
+def check_matching_irradiation(sample, row):
+    # Check that irradiation matches
+    try:
+        session = sample.session_collection[0]
+    except IndexError:
+        # Sample is not linked to any sessions, and that's OK!
+        return
+
     irr = session.get_attribute("Irradiation ID")
     # Sessions should not have two Irradiation IDs
     assert len(irr) == 1
@@ -45,6 +52,16 @@ def format_authorlist(author):
             auths += " et al."
     return auths
 
+def parse_doi(link):
+    doi = link.split("doi.org/")[-1]
+    if doi.startswith("doi:"):
+        doi = doi[4:].strip()
+    link = None
+    if not doi.startswith("10"):
+        link = doi
+        doi = None
+    return doi, link
+
 class MetadataImporter(BaseImporter):
     authority = "WiscAr"
     def __init__(self, db, metadata_file, **kwargs):
@@ -63,7 +80,7 @@ class MetadataImporter(BaseImporter):
         self.import_sheet(fn, 1)
 
     def import_sheet(self, fn, index=0):
-        df = read_excel(fn, sheetname=index)
+        df = read_excel(fn, sheet_name=index)
         n = len(df)
         print(f"{n} rows")
         self.import_samples(df)
@@ -82,7 +99,7 @@ class MetadataImporter(BaseImporter):
             try:
                 self.import_sample(row)
                 self.db.session.commit()
-            except Exception as exc:
+            except SparrowImportError as exc:
                 secho(exc.__class__.__name__+": "+str(exc), fg='red')
                 self.db.session.rollback()
 
@@ -90,32 +107,65 @@ class MetadataImporter(BaseImporter):
 
     def import_sample(self, row):
         name = str(row.name)
-        s = self.sample(name=name)
+        sample = self.sample(name=name)
+        sample_schema = self.db.interface.sample()
+        entity_ref_schema = self.db.interface.sample_geo_entity()
+
         echo(f"Sample {name}")
-        if s._created:
+        # We need a better way to check creation...
+        if sample._created:
             secho(f"  created", fg='yellow')
         else:
             secho(f"  found existing", fg='green')
-        n = len(s.session_collection)
+
+        n = len(sample.session_collection)
         echo(f"  {n} sessions")
-        # Check that irradiation matches
-        session = None
-        if n > 0:
-            session = s.session_collection[0]
-            confirm_matching_irradiation(session, row)
+
+        # Sanity checks
+        check_matching_irradiation(sample, row)
 
         lon = row['longitude']
         lat = row['latitude']
         if not (isna(lon) or isna(lat)):
             loc = self.location(lon,lat)
             print(loc)
-            s.location = loc
+            sample.location = loc
 
         lith = row['lithology']
         if not isna(lith):
             print(lith)
-            s._material = self.material(lith)
-        self.db.session.add(s)
+            sample._material = self.material(lith)
+
+        self.db.session.add(sample)
+        # This shouldn't be necessary, but it appears to be...
+        self.db.session.flush()
+
+        ## Geological entities
+        # NOTE: this should probably happen before sample is added, but we
+        # couldn't get that to work using the prototype schema-based importing.
+        units = []
+        # Formations
+        fm = row.get("Formation")
+        if fm is not None and not isna(fm):
+            units.append({
+                'name': fm,
+                'type': 'formation'
+            })
+
+        # Members (even though most aren't actually members in the sheet)
+        mbr = row.get("Member")
+        if mbr is not None and not isna(mbr):
+            units.append({
+                'name': mbr,
+                'type': 'member (unverified + notes)'
+            })
+
+        # Build "linking" model and insert
+        for u in units:
+            ref = entity_ref_schema.load(
+                dict(geo_entity=u, sample=sample),
+                session=self.db.session)
+            self.db.session.add(ref)
         self.db.session.flush()
 
     def import_project(self, name, group):
@@ -130,14 +180,7 @@ class MetadataImporter(BaseImporter):
 
         print(title_summary)
 
-        doi = link.split("doi.org/")[-1]
-        if doi.startswith("doi:"):
-            doi = doi[4:].strip()
-        link = None
-        if not doi.startswith("10"):
-            link = doi
-            doi = None
-        print(doi, link)
+        doi, link = parse_doi(link)
 
         def get(key):
             vals = [v for v in group[key].unique() if not isna(v)]
@@ -147,11 +190,12 @@ class MetadataImporter(BaseImporter):
 
         p = self.project(name=title_summary)
 
-        pub = self.m.publication.get_or_create(
+        pub_data = dict(
             doi=doi,
             title=get('Title'),
             link=link)
 
+        pub = self.db.get_instance("publication", pub_data)
         pub.author = author
         pub.journal = get('journal')
         pub.year = get('year')
@@ -175,11 +219,11 @@ class MetadataImporter(BaseImporter):
 
     def import_projects(self, df):
         # Group by publication for now
-        projects = df.groupby(["Title", "doi link"])
+        projects = df.groupby(["Title", "doi_link"])
         for name, group in projects:
             try:
                 self.import_project(name, group)
                 self.db.session.commit()
-            except Exception as exc:
+            except SparrowImportError as exc:
                 secho(exc.__class__.__name__+": "+str(exc), fg='red')
                 self.db.session.rollback()

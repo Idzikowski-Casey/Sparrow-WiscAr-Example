@@ -54,7 +54,7 @@ def import_metadata(redo=False, stop_on_error=False, verbose=False):
     """
     data_path = get_data_directory()
 
-    fn = (data_path/'WiscAr_metadata.xlsx')
+    fn = (data_path/'WiscAr_metadata_v2.xlsx')
     assert fn.exists()
 
     app, db = construct_app(minimal=True)
