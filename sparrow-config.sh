@@ -1,6 +1,6 @@
 # Configures environment for WiscAr lab
 
-export PROJECT_DIR="$(git rev-parse --show-toplevel)"
+export PROJECT_DIR="${0:h}"
 export SPARROW_PATH="$PROJECT_DIR/Sparrow"
 export SPARROW_CONFIG="$SPARROW_PATH/config/WiscAr.cfg"
 export SPARROW_BACKUP_DIR="$PROJECT_DIR/backups"
