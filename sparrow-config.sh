@@ -16,6 +16,9 @@ export SPARROW_COMMANDS="$pipeline/bin"
 export COMPOSE_PROJECT_NAME="WiscAr"
 
 export SPARROW_DATA_DIR="$PROJECT_DIR/Data"
+
+# Config for birdnest
+export SPARROW_BASE_URL="/labs/wiscar"
 export SPARROW_DB_PORT="54351"
 export SPARROW_HTTP_PORT="50101"
 export SPARROW_COMPOSE_OVERRIDES="-f $PROJECT_DIR/docker-compose.overrides.yaml"
