@@ -1,14 +1,15 @@
 # Sparrow for the WiscAr lab
 
-This installation of Sparrow powers the WiscAr lab at the University of Wisconsin.
+This installation of Sparrow powers the [WiscAr lab's instance](https://sparrow-data.org/labs/wiscar).
+It contains customized importers and configurations for the lab's data types.
 
 ## Installation
 
 Currently, Sparrow is included as a [Git Submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
-This pins Sparrow to a particular version that is supported by the WiscAr lab.
+This pins Sparrow to the particular version that is running for the WiscAr lab.
 
 The installation steps closely follow those
-for [setting up Sparrow by itself](https://sparrow-data.org/installation/),
+for [setting up Sparrow with default parameters](https://sparrow-data.org/installation/),
 but differ slightly because Sparrow is itself a submodule.
 First, clone this repository from Github. Then, within the created
 directory, run `git submodule update --init --recursive`. This will
@@ -52,7 +53,7 @@ at `Data/MAP-Irradiations`.
 ### Bulk metadata import
 
 Metadata can be imported using the command `sparrow import-metadata`.
-This currently expects a file `Data/WiscAr_metadata_v2.xlsx` within this repository.
+This currently expects a file `Data/WiscAr_metadata.xlsx` within this repository.
 
 ## Todo
 
