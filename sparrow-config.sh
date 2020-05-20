@@ -19,3 +19,4 @@ export SPARROW_DATA_DIR="$PROJECT_DIR/Data"
 
 overrides="${0:h}/sparrow-config.overrides.sh"
 [ -f "$overrides" ] && source "$overrides"
+
