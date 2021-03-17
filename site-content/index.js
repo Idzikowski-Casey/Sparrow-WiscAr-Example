@@ -10,6 +10,16 @@ import { SampleMap } from "../plugins/globe";
 
 export default {
   siteTitle: "WiscAr",
+  mapStyles: [
+    {
+      name: "Topographic Map",
+      style: "mapbox://styles/jczaplewski/cjftzyqhh8o5l2rqu4k68soub",
+    },
+    {
+      name: "Satelite Map",
+      style: "mapbox://styles/jczaplewski/cjeycrpxy1yv22rqju6tdl9xb",
+    },
+  ],
   landingText: h(Markdown, { src: aboutText }),
   sessionDetail: (props) => {
     const { defaultContent, ...rest } = props;
