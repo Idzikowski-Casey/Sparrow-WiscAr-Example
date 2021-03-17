@@ -16,7 +16,7 @@ export default {
       style: "mapbox://styles/jczaplewski/cjftzyqhh8o5l2rqu4k68soub",
     },
     {
-      name: "Satelite Map",
+      name: "Satellite Map",
       style: "mapbox://styles/jczaplewski/cjeycrpxy1yv22rqju6tdl9xb",
     },
   ],
