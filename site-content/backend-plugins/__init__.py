@@ -33,7 +33,7 @@ class MetricsEndpointWiscAr(SparrowPlugin):
         return JSONResponse(json.loads(res))
 
     def on_api_initialized_v2(self, api):
-
+        
         root_route = "Lab Plugins"
         basic_info = dict(
             route = "/metrics",
